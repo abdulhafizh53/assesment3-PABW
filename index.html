@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Villa Management</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.11.2/datatables.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
+    <style>
+        #updateDialog {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mekarsari Villa Management</h1>
+
+    <h2>Villa Data Management</h2>
+    <table id="villaTable" class="display" style="width:100%">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nama Villa</th>
+                <th>Harga</th>
+                <th>Fasilitas</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <h2>Add Villa</h2>
+    <form id="addForm">
+        <div>
+            <label for="id">ID:</label>
+            <input type="text" id="id" name="id">
+        </div>
+        <div>
+            <label for="nama_villa">Nama Villa:</label>
+            <input type="text" id="nama_villa" name="nama_villa">
+        </div>
+        <div>
+            <label for="harga">Harga:</label>
+            <input type="text" id="harga" name="harga">
+        </div>
+        <div>
+            <label for="fasilitas">Fasilitas:</label>
+            <input type="text" id="fasilitas" name="fasilitas">
+        </div>
+        <div>
+            <button type="submit">Add</button>
+        </div>
+    </form>
+
+    <div id="updateDialog" title="Update Villa" style="display: none;">
+        <form id="updateForm">
+            <div>
+                <label for="id_update">ID:</label>
+                <input type="text" id="id_update" name="id_update" readonly>
+            </div>
+            <div>
+                <label for="new_id">New ID (Optional):</label>
+                <input type="text" id="new_id" name="new_id">
+            </div>
+            <div>
+                <label for="nama_villa_update">Nama Villa:</label>
+                <input type="text" id="nama_villa_update" name="nama_villa_update">
+            </div>
+            <div>
+                <label for="harga_update">Harga:</label>
+                <input type="text" id="harga_update" name="harga_update">
+            </div>
+            <div>
+                <label for="fasilitas">Fasilitas:</label>
+                <input type="text" id="fasilitas_update" name="fasilitas_update">
+            </div>
+            <div>
+                <button type="submit">Update</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-1.11.2/datatables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
+    <script>
+
+        $(document).ready(function() {
+            // Initialisasi DataTable ======================================================================================
+            var villaTable = $('#villaTable').DataTable({
+                ajax: {
+                    url: 'http://localhost/pabw3/koneksi.php',
+                    dataSrc: ''
+                },
+                columns: [
+                    { data: 'id' },
+                    { data: 'nama_villa' },
+                    { data: 'harga' },
+                    { data: 'fasilitas' },
+                    {
+                        data: null,
+                        render: function (data, type, row) {
+                            return '<button class="deleteButton" data-id="' + row.id + '">Delete</button>' +
+                                   '<button class="updateButton" data-id="' + row.id + '">Update</button>';
+                        }
+                    }
+                ]
+            });
+
+            // Add/POST Form ===============================================================================================
+            $('#addForm').validate({
+                rules: {
+                    id: 'required',
+                    nama_villa: 'required',
+                    harga: 'required',
+                    fasilitas: 'required'
+                },
+                submitHandler: function(form) {
+                    var formData = $(form).serialize();
+                    $.ajax({
+                        url: 'http://localhost/pabw3/koneksi.php',
+                        type: 'POST',
+                        data: formData,
+                        success: function(response) {
+                            villaTable.ajax.reload();
+                            form.reset();
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            // Intialisasi Update/PUT ======================================================================================
+            $('#updateForm').validate({
+                rules: {
+                    nama_villa_update: 'required',
+                    harga_update: 'required',
+                    ketersediaan_update: 'required',
+                    deskripsi_update: 'required',
+                },
+                submitHandler: function(form) {
+                    var formData = $(form).serialize();
+                    $.ajax({
+                        url: 'http://localhost/pabw3/koneksi.php',
+                        type: 'PUT',
+                        data: formData,
+                        success: function(response) {
+                            villaTable.ajax.reload();
+                            $('#updateDialog').dialog('close');
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            // Update/PUT Form =============================================================================================
+            $('#villaTable').on('click', '.updateButton', function() {
+                var id = $(this).data('id');
+                var row = $(this).closest('tr');
+                var rowData = villaTable.row(row).data();
+                $('#id_update').val(rowData.id);
+                $('#new_id').val('');
+                $('#nama_villa_update').val(rowData.nama_villa);
+                $('#harga_update').val(rowData.harga);
+                $('#ketersediaan_update').val(rowData.ketersediaan);
+                $('#deskripsi_update').val(rowData.deskripsi);
+                $('#updateDialog').dialog('open');
+            });
+
+            // Submit or Cancel ===========================================================================================
+            $('#updateDialog').dialog({
+                autoOpen: false,
+                width: 400,
+                buttons: {
+                    "Update": function() {
+                        $('#updateForm').submit();
+                    },
+                    "Cancel": function() {
+                        $(this).dialog('close');
+                    }
+                }
+            });
+
+            // DELETE + Confirmation =======================================================================================
+            $('#villaTable').on('click', '.deleteButton', function() {
+                var id = $(this).data('id');
+                var row = $(this).closest('tr');
+                if (confirm('Are you sure you want to delete this villa?')) {
+                    $.ajax({
+                        url: 'http://localhost/pabw3/koneksi.php?id=' + id,
+                        type: 'DELETE',
+                        success: function(response) {
+                            villaTable.row(row).remove().draw(false);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(xhr.responseText);
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
